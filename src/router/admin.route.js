@@ -1,0 +1,13 @@
+import {Router } from "express";
+import { verifyJWT } from "../middleware/auth.middleware.js";
+import { requireAdmin } from "../middleware/role.middleware.js";
+import { sanitize } from "../middleware/sanitization.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
+import { roleSchema } from "../validation /role.validation.js";
+import { removeRole, updateRoleByAdmin } from "../controller/admin.controller.js";
+const router = Router();
+router.route("/get-all-data").post(verifyJWT,requireAdmin)
+router.route("/update-role/:userId").patch(verifyJWT,requireAdmin,sanitize,validate(roleSchema),updateRoleByAdmin)
+router.route("/remove-role/:userId").patch(verifyJWT,requireAdmin,sanitize,validate(roleSchema),removeRole)
+router.oure("/delete-user/:userId").delete(verifyJWT,requireAdmin,sanitize,deleteUser)
+export default router;
