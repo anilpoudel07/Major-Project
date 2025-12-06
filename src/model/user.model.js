@@ -37,14 +37,7 @@ match: [/^\d{10,12}$|^\d{2}-\d{2}-\d{2}-\d{6}$/, "Invalid Nepal National ID  for
          match:[/98\d{8}$/,"Please enter a valid Nepali mobile number (98xxxxxxxx}"]
 
      },
-//      driverInfo: {
-//       driverName:String, 
-//     operator:     { type: Schema.Types.ObjectId, ref: 'Operator' },
-//     vehicle:      { type: Schema.Types.ObjectId, ref: 'Vehicle' },
-//     licenseNo:    String,
-//     currentTrip:  { type: Schema.Types.ObjectId, ref: 'Trip' },
-//     status:       { type: String, enum: ['offline','online','on_trip'], default: 'offline' }
-//   },
+
      email:{type:String, 
         required:true, 
         unique:true,
@@ -63,7 +56,11 @@ match:[/^\S+@\S+\.\S+$/,"Please enter a valid email"]
        // ref:"NfcCard",
       //  default:null, 
   //   },
-  
+  default_card: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "NfcCard",
+  default: null
+},
      isVerified:{type:Boolean, default:false},
 
 
