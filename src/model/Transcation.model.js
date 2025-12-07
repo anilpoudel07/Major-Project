@@ -1,3 +1,5 @@
+import mongoose, { Schema } from "mongoose";
+
 const transactionSchema = new Schema({
   txnId:         { type: String, required: true, unique: true },   // e.g. TXN-20251229-001A
   nfcCard:       { type: Schema.Types.ObjectId, ref: 'NfcCard', required: true },

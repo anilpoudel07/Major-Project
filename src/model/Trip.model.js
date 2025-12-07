@@ -1,45 +1,55 @@
-
-
 import mongoose, { Schema } from "mongoose";
 
 const tripSchema = new Schema(
   {
-    user: { type: Schema.Types.ObjectId, ref: "User" },
-
-    card: { type: Schema.Types.ObjectId, ref: "NfcCard" },
-
-    bus: { type: Schema.Types.ObjectId, ref: "Bus" },
-
-    entry_event: { type: Schema.Types.ObjectId, ref: "TapEvent" },
-    exit_event: { type: Schema.Types.ObjectId, ref: "TapEvent" },
-
-    distance_m: { type: Number, default: 0 },
-
-    fare: { type: Number, default: 0 }, 
-
-    status: {
-      type: String,
-      enum: ["completed", "incomplete"],
-      default: "incompleted"
+    passengerId: { 
+      type: Schema.Types.ObjectId, 
+      ref: "User", 
+      required: true 
     },
-    entry_lat:{
-      type:Number
+
+    busId: { 
+      type: Schema.Types.ObjectId, 
+      ref: "Bus", 
+      required: true 
     },
-    entry_lon:{
-      type:Number
+
+    entryLocation: {
+      lat: { type: Number, required: true },
+      lon: { type: Number, required: true }
     },
-    exit_lat:{
-      type:Number
+
+    exitLocation: {
+      lat: { type: Number },
+      lon: { type: Number }
     },
-    exit_lon:{
-      type:Number
-    }
+
+    entryTime: {
+      type: Date,
+      required: true,
+      default: Date.now
+    },
+
+    exitTime: {
+      type: Date
+    },
+
+    fare: { 
+      type: Number,
+      default: null
+    }, 
+
+    completed: {
+      type: Boolean,
+      default: false
+    },
     
   },
   { timestamps: true }
 );
 
-tripSchema.index({ user: 1 });
-tripSchema.index({ card: 1 });
+tripSchema.index({ passengerId: 1, completed: 1 });
+tripSchema.index({ busId: 1 });
+tripSchema.index({ passengerId: 1, busId: 1, completed: 1 });
 
 export const Trip = mongoose.model("Trip", tripSchema);

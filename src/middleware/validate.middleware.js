@@ -5,8 +5,7 @@ export const validate = (schema)=>(req,res,next)=>{
         req.body = schema.parse(req.body);
         next()
     } catch (error) {
-        throw new ApiError(400,error
-        
-        )
+        const errorMessage = error.errors?.map(e => e.message).join(", ") || error.message || "Validation failed";
+        throw new ApiError(400, errorMessage);
     }
 }

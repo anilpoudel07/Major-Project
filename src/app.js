@@ -28,6 +28,13 @@ app.use("/api/v1/healthcheck", healthcheckRouter);
 
 import userRoute from "./router/user.route.js";
 app.use("/api/v1/users", userRoute);
+
+// Direct route for tap endpoint: /api/v1/user/tap
+// import { handleTap } from "./controller/tap.controller.js";
+// import { tapSchema } from "./validation/tap.validation.js";
+// import { validate } from "./middleware/validate.middleware.js";
+// app.post("/api/v1/user/tap", sanitize, validate(tapSchema), handleTap);
+
 import adminRoute from "./router/admin.route.js"
 app.use("/api/v1/admin/",adminRoute);
 

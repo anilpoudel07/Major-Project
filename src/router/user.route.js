@@ -4,6 +4,8 @@ import { verifyJWT } from "../middleware/auth.middleware.js";
 import { userLoginSchema, userRegisterSchema } from "../validation/user.validation.js";
 import { sanitize } from "../middleware/sanitization.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
+import { handleTap } from "../controller/tap.controller.js";
+import { tapSchema } from "../validation/tap.validation.js";
 
 const routes  = Router();
 routes.route("/profile").get(verifyJWT,async(req , res)=>{
@@ -18,5 +20,6 @@ routes.route("/profile").get(verifyJWT,async(req , res)=>{
 routes.route("/register").post(sanitize, validate(userRegisterSchema),registerUser)
 routes.route("/login").post(sanitize,validate(userLoginSchema),loginUser)
 routes.route("/logout").post(verifyJWT,logoutUser)
+routes.route("/tap").post(sanitize, validate(tapSchema), handleTap)
 
 export default routes;

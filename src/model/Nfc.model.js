@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-const NfcCardSchema = new mongoose. Schema({
+import mongoose, { Schema } from "mongoose";
+const NfcCardSchema = new mongoose.Schema({
   cardUid:      { type: String, required: true, unique: true },   // Physical UID
  user:        { type: Schema.Types.ObjectId, ref: 'User', required: true },
   balance:      { type: Number, default: 0, min: 0 },
