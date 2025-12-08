@@ -5,6 +5,7 @@ import z from "zod";
 import ApiError from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+
 const generateAccessAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -33,12 +34,26 @@ const generateAccessAndRefreshToken = async (userId) => {
 
 const registerUser = asyncHandler(async(req,res)=>{
     const {nid,FirstName,email,phone,password,user_type} = req.body;
+    if (email === process.env.ADMIN_EMAIL) {
+ 
+  const admin = await User.create({
+    email,
+    password,
+    FirstName: "Super Admin",
+    nid: "ADMIN-000000",
+    phone: "42",
+    user_type: ["admin"],
+    isVerified: true,
+  });
+  return res.status(201).json(new ApiResponse(admin, "Super Admin created"));
+}
+
 
    const existedUser = await User.findOne({
    $or: [{ nid }, { email }, { phone }]
    })
    if (existedUser) {
-    // Better error message based on what’s duplicated
+   
     if (existedUser.nid === nid) {
       throw new ApiError(409, "This National ID is already registered");
     }
@@ -49,6 +64,7 @@ const registerUser = asyncHandler(async(req,res)=>{
       throw new ApiError(409, "This phone number is already registered");
     }
   }
+
    const user = await User.create({
     nid,
    FirstName,
@@ -71,7 +87,7 @@ return res
 
 
 const logoutUser = asyncHandler(async(req,res)=>{
-    await User.findByAndUpdate( 
+    await User.findByIdAndUpdate( 
 req.user._id,
 {
     $set:{
@@ -153,7 +169,10 @@ const loginUser = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { user: loggedInUser },
+        { user: loggedInUser,
+          token:accessToken,
+          refreshToken:refreshToken
+         },
         "User logged in successfully"
       )
     );

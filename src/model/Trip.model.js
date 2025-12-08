@@ -21,18 +21,6 @@ const tripSchema = new Schema(
       type: String,
       enum: ["completed", "incomplete"],
       default: "incompleted"
-    },
-    entry_lat:{
-      type:Number
-    },
-    entry_lon:{
-      type:Number
-    },
-    exit_lat:{
-      type:Number
-    },
-    exit_lon:{
-      type:Number
     }
     
   },
