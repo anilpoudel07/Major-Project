@@ -20,12 +20,14 @@ export const processTapEvent = async (rfid, busId, latitude, longitude) => {
     if (!nfcCard) {
       throw new ApiError(404, "NFC card not found");
     }
-    
+
     console.log(`nfcCard:  ${nfcCard}`);
-    
 
     if (!nfcCard.isActive) {
       throw new ApiError(400, "NFC card is not active");
+    }
+    if (!nfcCard.isVerified) {
+      throw new ApiError(400, "NFC card is not verified");
     }
 
     // Find passenger/user
@@ -34,7 +36,6 @@ export const processTapEvent = async (rfid, busId, latitude, longitude) => {
       throw new ApiError(404, "Passenger not found");
     }
     console.log(`passenger:${passenger}`);
-    
 
     // Validate bus
     const bus = await Bus.findById(busId).session(session);
@@ -43,19 +44,33 @@ export const processTapEvent = async (rfid, busId, latitude, longitude) => {
     }
     console.log(`bus:${bus}`);
 
-
     const lat = parseFloat(latitude);
     const lon = parseFloat(longitude);
-    console.log(`lat:${lat,lon}`);
-    
+    console.log(`lat:${lat}`);
 
     // Check if passenger is currently onboard
     if (!passenger.onBoard) {
       // ENTRY EVENT
-      return await handleEntry(session, passenger, nfcCard, bus, busId, lat, lon);
+      return await handleEntry(
+        session,
+        passenger,
+        nfcCard,
+        bus,
+        busId,
+        lat,
+        lon
+      );
     } else {
       // EXIT EVENT
-      return await handleExit(session, passenger, nfcCard, bus, busId, lat, lon);
+      return await handleExit(
+        session,
+        passenger,
+        nfcCard,
+        bus,
+        busId,
+        lat,
+        lon
+      );
     }
   } catch (error) {
     await session.abortTransaction();
@@ -68,7 +83,15 @@ export const processTapEvent = async (rfid, busId, latitude, longitude) => {
 /**
  * Handle entry tap event
  */
-const handleEntry = async (session, passenger, nfcCard, bus, busId, lat, lon) => {
+const handleEntry = async (
+  session,
+  passenger,
+  nfcCard,
+  bus,
+  busId,
+  lat,
+  lon
+) => {
   // Create trip entry
   const trip = await Trip.create(
     [
@@ -116,7 +139,15 @@ const handleEntry = async (session, passenger, nfcCard, bus, busId, lat, lon) =>
 /**
  * Handle exit tap event
  */
-const handleExit = async (session, passenger, nfcCard, bus, busId, lat, lon) => {
+const handleExit = async (
+  session,
+  passenger,
+  nfcCard,
+  bus,
+  busId,
+  lat,
+  lon
+) => {
   // Find the last incomplete trip for this passenger on this bus
   const activeTrip = await Trip.findOne({
     passengerId: passenger._id,
@@ -134,9 +165,12 @@ const handleExit = async (session, passenger, nfcCard, bus, busId, lat, lon) => 
     })
       .sort({ entryTime: -1 })
       .session(session);
-    
+
     if (anyActiveTrip) {
-      throw new ApiError(400, `Cannot exit on this bus. Please exit on the bus you entered (Bus ID: ${anyActiveTrip.busId})`);
+      throw new ApiError(
+        400,
+        `Cannot exit on this bus. Please exit on the bus you entered (Bus ID: ${anyActiveTrip.busId})`
+      );
     }
     throw new ApiError(404, "No active trip found for exit");
   }
@@ -153,7 +187,10 @@ const handleExit = async (session, passenger, nfcCard, bus, busId, lat, lon) => 
 
   // Check if passenger has sufficient balance
   if (nfcCard.balance < fare) {
-    throw new ApiError(400, `Insufficient balance. Required: ${fare} NPR, Available: ${nfcCard.balance} NPR`);
+    throw new ApiError(
+      400,
+      `Insufficient balance. Required: ${fare} NPR, Available: ${nfcCard.balance} NPR`
+    );
   }
 
   // Update trip with exit details
@@ -185,7 +222,10 @@ const handleExit = async (session, passenger, nfcCard, bus, busId, lat, lon) => 
         trip: activeTrip._id,
         tapIn: {
           time: activeTrip.entryTime,
-          location: [activeTrip.entryLocation.lon, activeTrip.entryLocation.lat],
+          location: [
+            activeTrip.entryLocation.lon,
+            activeTrip.entryLocation.lat,
+          ],
         },
         tapOut: {
           time: activeTrip.exitTime,
@@ -220,4 +260,3 @@ const generateTransactionId = () => {
   const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `TXN-${timestamp}-${randomStr}`;
 };
-

@@ -34,9 +34,9 @@ const toRadians = (degrees) => {
 /**
  * Calculate fare based on distance
  */
-export const calculateFare = (distanceKm, ratePerKm = 0.15) => {
+export const calculateFare = (distanceKm, ratePerKm = 10) => {
   // Minimum fare for short distances
-  const minimumFare = 0.15; // Minimum 15 NPR
+  const minimumFare = 10; // Minimum 15 NPR
   
   if (distanceKm <= 0) {
     return minimumFare;
