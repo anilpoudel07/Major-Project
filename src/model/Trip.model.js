@@ -1,5 +1,3 @@
-
-
 import mongoose, { Schema } from "mongoose";
 
 const tripSchema = new Schema(
@@ -15,14 +13,13 @@ const tripSchema = new Schema(
 
     distance_m: { type: Number, default: 0 },
 
-    fare: { type: Number, default: 0 }, 
+    fare: { type: Number, default: 0 },
 
     status: {
       type: String,
-      enum: ["completed", "incomplete"],
-      default: "incompleted"
-    }
-    
+      enum: ["completed", "incompleted"],
+      default: "incompleted",
+    },
   },
   { timestamps: true }
 );

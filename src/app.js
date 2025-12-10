@@ -33,10 +33,13 @@ import userRoute from "./router/user.route.js";
 app.use("/api/v1/users", userRoute);
 import adminRoute from "./router/admin.route.js";
 app.use("/api/v1/admin/", adminRoute);
-app.post("/api/v1/user/tap", async (req, res) => {
-  // const {rfid,}
-  console.log("user tapped");
-});
+
+// Direct route for tap endpoint: /api/v1/user/tap
+import { handleTap } from "./controller/tap.controller.js";
+import { tapSchema } from "./validation/tap.validation.js";
+import { validate } from "./middleware/validate.middleware.js";
+app.post("/api/v1/user/tap", sanitize, validate(tapSchema), handleTap);
+
 app.post("/bus/update-location", async (req, res) => {
   try {
     const { busId, lat, lng } = req.body;

@@ -1,5 +1,3 @@
-
-
 import { z } from "zod";
 
 export const nfcCardSchema = z.object({
@@ -9,20 +7,15 @@ export const nfcCardSchema = z.object({
     .regex(/^[A-F0-9]+$/i, "Invalid card UID format")
     .transform((val) => val.toUpperCase()),
 
-
   balance: z
     .number()
     .min(0, "Balance cannot be negative")
     .default(0)
     .optional(),
 
-  cardType: z
-    .enum(["personal", "student", "senior"])
-    .default("personal"),
+  cardType: z.enum(["personal", "student", "senior"]).default("personal"),
 
-  status: z
-    .enum(["active", "lost", "blocked"])
-    .default("active"),
+  status: z.enum(["active", "lost", "blocked"]).default("active"),
 
   isActive: z.boolean().default(true),
 
