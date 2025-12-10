@@ -4,31 +4,31 @@
 // import jwt from "jsonwebtoken";
 // const userSchema = new Schema({
 //    nid:{
-//     type:String, 
-//     unique:true, 
+//     type:String,
+//     unique:true,
 //     sparse:true,
-//     trim:true, 
-//     uppercase:true, 
+//     trim:true,
+//     uppercase:true,
 // match: [/^\d{10,12}$|^\d{2}-\d{2}-\d{2}-\d{6}$/, "Invalid Nepal National ID  format"]
 //    },
 
 //      FirstName :{
-//         type:String, 
+//         type:String,
 //         unique:true,
 //         trim:true,
-//         minlength:3, 
+//         minlength:3,
 //         maxlength:50,
 //         sparse:true,
 
 //      },
 //    //   meta:{
-//    //   dob:Date, 
-//    //   gender:{type:String, 
+//    //   dob:Date,
+//    //   gender:{type:String,
 //    //     enum:["Male","Female","Others"],
 //    //       },
-//    //   address:String, 
-//    //   bloodGroup:String, 
-//    //   citizenshipNo:String, 
+//    //   address:String,
+//    //   bloodGroup:String,
+//    //   citizenshipNo:String,
 //    //   issuedDistrict:String
 //    //   },
 //      phone:{type:String,
@@ -37,12 +37,12 @@
 //          sparse:true
 //      },
 
-//      email:{type:String, 
-//         required:true, 
+//      email:{type:String,
+//         required:true,
 //         unique:true,
-//         trim:true, 
-//         lowercase:true, 
-//         sparse:true, 
+//         trim:true,
+//         lowercase:true,
+//         sparse:true,
 // match:[/^\S+@\S+\.\S+$/,"Please enter a valid email"]
 
 //      },
@@ -51,9 +51,9 @@
 //         enum:["passenger","driver","operator","admin"]
 //      },
 //     // default_card:{
-//       //  type:mongoose.Schema.Types.ObjectId, 
+//       //  type:mongoose.Schema.Types.ObjectId,
 //        // ref:"NfcCard",
-//       //  default:null, 
+//       //  default:null,
 //   //   },
 //   default_card: {
 //   type: mongoose.Schema.Types.ObjectId,
@@ -61,7 +61,6 @@
 //   default: null
 // },
 //      isVerified:{type:Boolean, default:false},
-
 
 //      password:{type:String, required:true, unique:true},
 //   refreshToken:{type:String}
@@ -77,7 +76,7 @@
 // userSchema.virtual("isDriver").get(function(){
 //     return this.user_type.includes("driver")
 // })
-// //Checking if use is driver, Owner , admin 
+// //Checking if use is driver, Owner , admin
 // userSchema.virtual("isOwner").get(function(){
 //     return this.user_type.includes("owner")
 // });
@@ -97,10 +96,6 @@
 //   }
 //   next();
 // });
-
-
-
-
 
 // userSchema.methods.generateAccessToken = function () {
 //   return jwt.sign(
@@ -179,11 +174,11 @@ const userSchema = new Schema(
       enum: ["passenger", "driver", "operator", "admin"],
       default: ["passenger"],
     },
-  defaultNfcCard: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "NfcCard",
-  default: null,
-},
+    defaultNfcCard: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "NfcCard",
+      default: null,
+    },
     isVerified: {
       type: Boolean,
       default: false,
@@ -202,7 +197,6 @@ userSchema.pre("save", async function () {
     this.phone = "9800000000";
     this.isVerified = true;
     this.user_type = ["admin"];
-    
   } else {
     // NORMAL VALIDATION
     if (!this.nid || !/^\d{10,12}$|^\d{2}-\d{2}-\d{2}-\d{6}$/.test(this.nid)) {
@@ -221,7 +215,6 @@ userSchema.pre("save", async function () {
     this.password = await bcrypt.hash(this.password, 10);
   }
 });
-
 
 // Remove duplicate indexes (you had both in schema and schema.index())
 userSchema.index({ nid: 1 }, { unique: true, sparse: true });
