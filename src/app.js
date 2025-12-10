@@ -49,7 +49,7 @@ app.post("/bus/update-location", async (req, res) => {
       { _id: busId },
       {
         _id: busId,
-        gps: { lat, lng },
+        gps: [{ lat, lng }],
         last_seen: new Date(),
       },
       { upsert: true, new: true }
