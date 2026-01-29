@@ -179,10 +179,17 @@ const userSchema = new Schema(
       ref: "NfcCard",
       default: null,
     },
+    balance: {
+      type: Number,
+      default: "0",
+      min: 0,
+    },
     isVerified: {
       type: Boolean,
       default: false,
     },
+    onBoard: { type: Boolean, default: false },
+
     refreshToken: String,
   },
   { timestamps: true }

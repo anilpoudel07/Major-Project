@@ -14,6 +14,8 @@ const nfcCardSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+  balance: { type: Number, default: 0, min: 0 },
+
   cardType: {
     type: String,
     enum: ["personal", "student", "senior", "temporary"],
@@ -21,12 +23,14 @@ const nfcCardSchema = new mongoose.Schema({
   },
   isVerified: {
     type: Boolean,
-    default: false,   
+    default: false,
   },
   verifiedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
+  isActive: { type: Boolean, default: true },
+
   verifiedAt: Date,
   requestedAt: {
     type: Date,

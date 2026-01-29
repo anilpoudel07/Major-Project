@@ -2,9 +2,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import express, { urlencoded } from "express";
 import morgan from "morgan";
-import http from "http";
-// import { Server } from "socket.io";
-import { Bus } from "./model/vechile.model.js"; // adjust as needed
+
+// import { Bus } from "./model/vechile.model.js"; // adjust as needed
 
 const app = express();
 
@@ -31,12 +30,18 @@ app.use("/api/v1/healthcheck", healthcheckRouter);
 
 import userRoute from "./router/user.route.js";
 app.use("/api/v1/users", userRoute);
+
+// Direct route for tap endpoint: /api/v1/user/tap
+import { handleTap } from "./controller/tap.controller.js";
+import { tapSchema } from "./validation/tap.validation.js";
+import { validate } from "./middleware/validate.middleware.js";
+app.post("/api/v1/user/tap", sanitize, validate(tapSchema), handleTap);
+
 import adminRoute from "./router/admin.route.js";
+import { Bus } from "./model/vechile.model.js";
+import { calculateDistance } from "./utils/distance.utils.js";
 app.use("/api/v1/admin/", adminRoute);
-app.post("/api/v1/user/tap", async (req, res) => {
-  // const {rfid,}
-  console.log("user tapped");
-});
+
 app.post("/bus/update-location", async (req, res) => {
   try {
     const { busId, lat, lng } = req.body;
@@ -73,8 +78,37 @@ app.get("/api/v1/bus/:busId", async (req, res) => {
 
     res.json(bus);
   } catch (err) {
-    res.status(500).json({ error: "Database error" });
+    res.status(500).json({ error: `${err}` });
   }
+});
+
+let lastLat = null;
+let lastLon = null;
+let totalDistance = 0;
+
+app.post("/api/v1/bus/update", (req, res) => {
+  const { latitude, longitude } = req.body;
+
+  // first GPS update
+  if (lastLat === null || lastLon === null) {
+    lastLat = latitude;
+    lastLon = longitude;
+    return res.json({ totalDistance, added: 0 });
+  }
+
+  // distance from last point to new point
+  const added = calculateDistance(lastLat, lastLon, latitude, longitude);
+
+  totalDistance += added;
+
+  // update last coordinates
+  lastLat = latitude;
+  lastLon = longitude;
+
+  res.json({
+    addedDistance: added,
+    totalDistance,
+  });
 });
 
 export default app;

@@ -36,7 +36,7 @@ export const removeRole = asyncHandler(async (req, res) => {
     req.params.userId,
     {
       $pull: {
-        user_type: roll,
+        user_type: role,
       },
     },
     {
