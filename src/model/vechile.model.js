@@ -5,34 +5,31 @@
 import mongoose, { Schema } from "mongoose";
 
 const busSchema = new Schema(
- 
   {
-
-  
     vehicle_no: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
-    liceceNo:{
-      type:String,
-      match:"/^[0-7]{2}-[0-9]{2}-\d{5,8}$"
+    liceceNo: {
+      type: String,
+      match: "/^[0-7]{2}-[0-9]{2}-d{5,8}$",
     },
 
     operator: {
       type: Schema.Types.ObjectId,
       ref: "Operator",
-      required: true
+      required: true,
     },
 
-    gps: {
-      lat: Number,
-      lng: Number
-    },
+    gps: [
+      {
+        lat: Number,
+        lng: Number,
+      },
+    ],
 
     last_seen: Date,
-
- 
   },
   { timestamps: true }
 );
@@ -40,4 +37,3 @@ const busSchema = new Schema(
 busSchema.index({ vehicle_no: 1 });
 
 export const Bus = mongoose.model("Bus", busSchema);
-
