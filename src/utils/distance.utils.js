@@ -1,4 +1,4 @@
-/**
+/*
  * Calculate distance between two GPS coordinates using Haversine formula
  * @param {number} lat1 - Latitude of first point
  * @param {number} lon1 - Longitude of first point
