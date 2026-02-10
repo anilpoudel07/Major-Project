@@ -24,14 +24,12 @@ app.use(sanitize);
 import { errorHandler } from "./middleware/error.middleware.js";
 
 app.use(errorHandler);
-import healthcheckRouter from "./router/healthcheck.route.js";
 //routes
-app.use("/api/v1/healthcheck", healthcheckRouter);
 
 import userRoute from "./router/user.route.js";
 app.use("/api/v1/users", userRoute);
-
-// Direct route for tap endpoint: /api/v1/user/tap
+import paymentRoute from "./router/payment.routes.js";
+app.use("/api/v1/users/payment", paymentRoute);
 import { handleTap } from "./controller/tap.controller.js";
 import { tapSchema } from "./validation/tap.validation.js";
 import { validate } from "./middleware/validate.middleware.js";

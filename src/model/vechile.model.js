@@ -1,19 +1,14 @@
-// models/bus.model.js
-
-// models/bus.model.js
 
 import mongoose, { Schema } from "mongoose";
 
 const busSchema = new Schema(
-  {
-    vehicle_no: {
+  { 
+    PlateNo:{
       type: String,
-      required: true,
-      unique: true,
     },
-    liceceNo: {
-      type: String,
-      match: "/^[0-7]{2}-[0-9]{2}-d{5,8}$",
+     driver:{
+      type:Schema.Types.ObjectId,
+      ref:"driver"
     },
 
     operator: {
@@ -22,7 +17,7 @@ const busSchema = new Schema(
       required: true,
     },
 
-    gps: [
+    currentLocation: [
       {
         lat: Number,
         lng: Number,

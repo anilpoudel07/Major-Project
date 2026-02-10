@@ -3000,7 +3000,6 @@ function normalizeRoute(kmlCoords) {
   }));
 }
 const normalizedRoute= normalizeRoute(kmlRoute);
-console.log(`normalizedRoute: ${normalizedRoute}`);
 
 
 function haversine(lat1, lon1, lat2, lon2) {

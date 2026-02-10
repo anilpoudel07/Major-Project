@@ -142,6 +142,7 @@ const userSchema = new Schema(
       type: String,
       unique: true,
       sparse: true,
+      index:true,
       trim: true,
       uppercase: true,
     },
@@ -157,6 +158,7 @@ const userSchema = new Schema(
       type: String,
       unique: true,
       sparse: true,
+      index:true
     },
     email: {
       type: String,
@@ -223,9 +225,6 @@ userSchema.pre("save", async function () {
   }
 });
 
-// Remove duplicate indexes (you had both in schema and schema.index())
-userSchema.index({ nid: 1 }, { unique: true, sparse: true });
-userSchema.index({ phone: 1 }, { unique: true, sparse: true });
 
 // Token methods
 userSchema.methods.generateAccessToken = function () {
