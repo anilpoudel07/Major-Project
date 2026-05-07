@@ -4,7 +4,7 @@ import {
   verifyPaymentController,
   checkPaymentStatus,
   khaltiCallback,
-  paymentTranscation
+  paymentTransaction
 
 } from "../controller/payment.controller.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
@@ -24,15 +24,16 @@ router.post("/initiate", verifyJWT,
   sanitize,
   validate(initiatePaymentSchema),
   initiatePayment);
-
-router.post("/verify", verifyJWT,
+router.post("/verify", 
+  verifyJWT, 
   requirePassenger,
   sanitize,
   validate(verifyPaymentSchema),
-  verifyPaymentController);
+  verifyPaymentController // Keep it here only
+);
 router.get("/status", sanitize, checkPaymentStatus);
 router.get("/khalti/callback", khaltiCallback);
-router.post("/transcation", verifyJWT,paymentTranscation );
+router.post("/transcation", verifyJWT, paymentTransaction);
 
 
 export default router;

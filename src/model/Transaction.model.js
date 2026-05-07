@@ -8,33 +8,36 @@ const transactionSchema = new Schema(
     trip: { type: Schema.Types.ObjectId, ref: "Trip" },
     busId: {
       type: Schema.Types.ObjectId,
-      ref: "Bus"
+      ref: "Bus",
     },
     khalti: {
       pidx: String,
-      transactionId: String,           
+      transactionId: String,
       amount: Number,
       status: {
         type: String,
-        enum: ["initiated", "completed", "failed", "refunded", "cancelled"], // ← added "cancelled" (common & useful)
-      }
+        enum: ["initiated", "completed", "failed", "refunded", "cancelled"],
+      },
     },
-    
-    isAutoTopup:{
-      type:Boolean,
-      default:false
+
+    isAutoTopup: {
+      type: Boolean,
+      default: false,
     },
-    topupAmount:{
-      type:Number,
-      default:0
+    requiredTopup: {
+      type: Number,
+      default: 0,
     },
+
     operatorId: {
       type: Schema.Types.ObjectId,
-      ref: "Operator"
+      ref: "Operator",
     },
 
     tapIn: {
-      time: { type: Date, required: false, default: Date.now() },
+      // FIX: was Date.now() — evaluated once at module load, all docs shared same timestamp.
+      // Date.now (no parens) is called per-document at creation time.
+      time: { type: Date, default: Date.now },
       stop: { type: Schema.Types.ObjectId, ref: "Stop" },
       location: { type: [Number], index: "2dsphere" }, // [lng, lat]
     },
@@ -43,34 +46,30 @@ const transactionSchema = new Schema(
       stop: { type: Schema.Types.ObjectId, ref: "Stop" },
       location: { type: [Number], index: "2dsphere" },
     },
-    requiredTopup: {
-      type: Number,
-    },
 
-    fare: { type: Number },// calculated on tap-out
-   status: {
+    fare: { type: Number }, // calculated on tap-out
+
+    status: {
       type: String,
       enum: [
         "pending_exit",
-        "payment_initiated",       // ← added this
+        "payment_initiated",
         "completed",
         "no_tap_out",
         "failed",
         "refunded",
         "payment_required",
-        // Optional additions you might want later:
-        // "payment_pending",      // after initiation but awaiting confirmation
-        // "cancelled",
       ],
       default: "pending_exit",
-    }, 
+    },
 
-   
     offline: { type: Boolean, default: false }, // generated on driver tablet
   },
   { timestamps: true }
 );
+
 transactionSchema.index({ nfcCard: 1, status: 1 });
 transactionSchema.index({ trip: 1 });
 
-export const Transcation = new mongoose.model("Transcation", transactionSchema);
+// FIX: was `new mongoose.model(...)` — mongoose.model() is a factory, not a constructor.
+export const Transaction = new  mongoose.model("Transaction", transactionSchema);

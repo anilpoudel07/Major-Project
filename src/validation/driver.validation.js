@@ -1,5 +1,6 @@
-import {z} from "zod";
-export const userRegisterSchema = z.object({
+import { z } from "zod";
+
+export const driverRegisterSchema = z.object({
   nid: z
     .string()
     .trim()
@@ -15,16 +16,11 @@ export const userRegisterSchema = z.object({
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
-}).refine((data) => {
-
-  if (data.email !== process.env.ADMIN_EMAIL) {
-    return data.nid && data.FirstName && data.phone;
-  }
-  return true;
-}, { message: "NID, Name, and Phone are required" });
-
-
-export const userLoginSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
+  license_number: z.string().trim().min(5, "License number must be at least 5 characters"),
+  license_expiry: z
+    .string()
+    .refine((val) => !isNaN(Date.parse(val)), "Invalid date format")
+    .refine((val) => new Date(val) > new Date(), "License expiry date must be in the future"),
 });
+
+

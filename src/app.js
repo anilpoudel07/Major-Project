@@ -25,6 +25,19 @@ import { errorHandler } from "./middleware/error.middleware.js";
 
 app.use(errorHandler);
 //routes
+//
+app.use((err, req, res, next) => {
+  console.error(err);
+
+  if (res.headersSent) {
+    return next(err); // ✅ prevent double send
+  }
+
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+  });
+});
 
 import userRoute from "./router/user.route.js";
 app.use("/api/v1/users", userRoute);
@@ -39,7 +52,8 @@ import adminRoute from "./router/admin.route.js";
 import { Bus } from "./model/vechile.model.js";
 import { calculateDistance } from "./utils/distance.utils.js";
 app.use("/api/v1/admin/", adminRoute);
-
+import operatorRoute from "./router/operator.router.js";
+app.use("/api/v1/operator/",operatorRoute);
 app.post("/bus/update-location", async (req, res) => {
   try {
     const { busId, lat, lng } = req.body;
@@ -66,9 +80,6 @@ app.post("/bus/update-location", async (req, res) => {
   }
 });
 
-// =====================================================
-// 2️⃣ GET → fetch current location of a bus
-// =====================================================
 app.get("/api/v1/bus/:busId", async (req, res) => {
   try {
     const bus = await Bus.findOne({ _id: req.params.busId });

@@ -1,3 +1,125 @@
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+const { Schema } = mongoose;
+
+const userSchema = new Schema(
+  {
+    nid: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+      trim: true,
+      uppercase: true,
+    },
+    FirstName: {
+      type: String,
+      sparse: true,
+      trim: true,
+      minlength: 3,
+      maxlength: 50,
+    },
+    phone: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    user_type: {
+      type: [String],
+      enum: ["passenger", "driver", "operator", "admin"],
+      default: ["passenger"],
+    },
+    defaultNfcCard: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "NfcCard",
+      default: null,
+    },
+    balance: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    onBoard: { type: Boolean, default: false },
+    refreshToken: String,
+  },
+  { timestamps: true }
+);
+
+userSchema.pre("save", async function () {
+  if (this.email === process.env.ADMIN_EMAIL) {
+    // FIX: was unconditionally overwriting fields on every save (e.g. token refresh).
+    // Only seed admin defaults when first creating the document.
+    if (this.isNew) {
+      this.FirstName = "System Admin";
+      this.nid = "ADMIN000000";
+      this.phone = "9800000000";
+      this.isVerified = true;
+      this.user_type = ["admin"];
+    }
+  } else {
+    // Normal user validation — only run on new docs or when relevant fields change
+    if (this.isNew || this.isModified("nid")) {
+      if (!this.nid || !/^\d{10,12}$|^\d{2}-\d{2}-\d{2}-\d{6}$/.test(this.nid)) {
+        throw new Error("Invalid Nepal National ID format");
+      }
+    }
+    if (this.isNew || this.isModified("phone")) {
+      if (!this.phone || !/^98\d{8}$/.test(this.phone)) {
+        throw new Error("Invalid Nepali mobile number");
+      }
+    }
+    if (this.isNew || this.isModified("FirstName")) {
+      if (!this.FirstName || this.FirstName.length < 3) {
+        throw new Error("First name must be at least 3 characters");
+      }
+    }
+  }
+
+  if (this.isModified("password")) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+});
+
+userSchema.methods.generateAccessToken = function () {
+  return jwt.sign(
+    { _id: this._id, email: this.email, user_type: this.user_type },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: "1h" }
+  );
+};
+
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign({ _id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: "7d",
+  });
+};
+
+userSchema.methods.isPasswordCorrect = async function (password) {
+  return await bcrypt.compare(password, this.password);
+};
+
+export const User = mongoose.model("User", userSchema);
+
+
+
 // import {mongoose,Schema} from "mongoose";
 
 // import bcrypt from "bcrypt";
@@ -130,119 +252,4 @@
 // export const User = new mongoose.model("User",userSchema)
 // src/model/user.model.js
 
-import mongoose from "mongoose";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 
-const { Schema } = mongoose;
-
-const userSchema = new Schema(
-  {
-    nid: {
-      type: String,
-      unique: true,
-      sparse: true,
-      index:true,
-      trim: true,
-      uppercase: true,
-    },
-    FirstName: {
-      type: String,
-      unique: true,
-      sparse: true,
-      trim: true,
-      minlength: 3,
-      maxlength: 50,
-    },
-    phone: {
-      type: String,
-      unique: true,
-      sparse: true,
-      index:true
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    password: {
-      type: String,
-      required: true,
-    },
-    user_type: {
-      type: [String],
-      enum: ["passenger", "driver", "operator", "admin"],
-      default: ["passenger"],
-    },
-    defaultNfcCard: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "NfcCard",
-      default: null,
-    },
-    balance: {
-      type: Number,
-      default: "0",
-      min: 0,
-    },
-    isVerified: {
-      type: Boolean,
-      default: false,
-    },
-    onBoard: { type: Boolean, default: false },
-
-    refreshToken: String,
-  },
-  { timestamps: true }
-);
-
-// ONLY ONE pre("save") hook — this is the correct way
-userSchema.pre("save", async function () {
-  // ADMIN BYPASS
-  if (this.email === process.env.ADMIN_EMAIL) {
-    this.FirstName = "System Admin";
-    this.nid = "ADMIN000000";
-    this.phone = "9800000000";
-    this.isVerified = true;
-    this.user_type = ["admin"];
-  } else {
-    // NORMAL VALIDATION
-    if (!this.nid || !/^\d{10,12}$|^\d{2}-\d{2}-\d{2}-\d{6}$/.test(this.nid)) {
-      throw new Error("Invalid Nepal National ID format");
-    }
-    if (!this.phone || !/^98\d{8}$/.test(this.phone)) {
-      throw new Error("Invalid Nepali mobile number");
-    }
-    if (!this.FirstName || this.FirstName.length < 3) {
-      throw new Error("First name must be at least 3 characters");
-    }
-  }
-
-  // PASSWORD HASH
-  if (this.isModified("password")) {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
-});
-
-
-// Token methods
-userSchema.methods.generateAccessToken = function () {
-  return jwt.sign(
-    { _id: this._id, email: this.email, user_type: this.user_type },
-    process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "1h" }
-  );
-};
-
-userSchema.methods.generateRefreshToken = function () {
-  return jwt.sign({ _id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: "7d",
-  });
-};
-
-userSchema.methods.isPasswordCorrect = async function (password) {
-  return await bcrypt.compare(password, this.password);
-};
-
-export const User = mongoose.model("User", userSchema);

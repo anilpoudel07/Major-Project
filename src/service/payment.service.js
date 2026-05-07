@@ -1,11 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { verifyKhalti } from "./khalti.service.js";
-import { Transcation } from "../model/Transcation.model.js";
 import { NfcCard } from "../model/Nfc.model.js";
 import { Trip } from "../model/Trip.model.js";
 import { User } from "../model/user.model.js";
 import ApiError from "../utils/ApiError.js";
-
+import { Transaction } from "../model/Transaction.model.js";
 // Generate a unique transaction ID
 export const generateTransactionId = () => {
   const timestamp = Date.now();
@@ -24,9 +23,9 @@ export const verifyPayment = async (pidx) => {
   }
 
   // 2. Find the transaction
-let txn = await Transcation.findOne({ "khalti.pidx": pidx });
+let txn = await Transaction.findOne({ "khalti.pidx": pidx });
 if (!txn) {
-  txn = await Transcation.findOne({ pidx }); } 
+  txn = await Transaction.findOne({ pidx }); } 
 
   // Avoid double processing
   if (txn.status === "completed") {

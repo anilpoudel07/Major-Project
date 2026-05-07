@@ -14,6 +14,21 @@ const tripSchema = new Schema(
       required: true,
     },
 
+    // ── NEW: copied from bus.operator at trip creation time ──
+    operator: {
+      type: Schema.Types.ObjectId,
+      ref: "Operator",
+      required: true,
+    },
+
+    // ── NEW: copied from bus.driver at trip creation time ──
+    // null if bus has no driver assigned at tap time
+    driver: {
+      type: Schema.Types.ObjectId,
+      ref: "Driver",
+      default: null,
+    },
+
     entryLocation: {
       lat: { type: Number, required: true },
       lon: { type: Number, required: true },
@@ -47,8 +62,20 @@ const tripSchema = new Schema(
   { timestamps: true }
 );
 
+// existing indexes
 tripSchema.index({ passengerId: 1, completed: 1 });
 tripSchema.index({ busId: 1 });
 tripSchema.index({ passengerId: 1, busId: 1, completed: 1 });
 
+// ── NEW indexes for operator/driver queries ──
+tripSchema.index({ operator: 1 });                    // all trips under an operator
+tripSchema.index({ driver: 1 });                      // all trips by a driver
+tripSchema.index({ operator: 1, completed: 1 });      // operator revenue queries
+tripSchema.index({ operator: 1, createdAt: -1 });     // operator trip history sorted by date
+
 export const Trip = mongoose.model("Trip", tripSchema);
+
+
+
+
+
