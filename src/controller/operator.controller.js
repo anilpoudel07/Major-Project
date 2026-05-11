@@ -6,7 +6,8 @@ import { Bus } from "../model/vechile.model.js";
 import ApiError from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
-// PRIVATE HELPER — get operator doc and verify they own bus
+// ── Private helpers ──────────────────────────────────────────────────────────
+
 const getOperatorDoc = async (userId) => {
   const operatorDoc = await Operator.findOne({ owner: userId });
   if (!operatorDoc)
@@ -24,9 +25,9 @@ const verifyDriverOwnership = (driver, operatorDoc) => {
     throw new ApiError(403, "This driver does not belong to your operator account");
 };
 
-//  PROFILE
+// ── PROFILE ──────────────────────────────────────────────────────────────────
 
-// GET /api/operator/profile
+// GET /api/v1/operator/profile
 const getOperatorProfile = asyncHandler(async (req, res) => {
   const operatorDoc = await Operator.findOne({ owner: req.user._id })
     .populate("buses", "plateNumber busType status driver currentOccupancy maxCapacity")
@@ -42,9 +43,49 @@ const getOperatorProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { user: req.user, operator: operatorDoc }, "Profile fetched successfully"));
 });
 
-//  VEHICLE (BUS) MANAGEMENT
+// ── LIVE MAP ─────────────────────────────────────────────────────────────────
 
-// POST /api/operator/vehicle/register
+/**
+ * GET /api/v1/operator/buses/live
+ *
+ * Returns all buses belonging to this operator with their latest GPS location,
+ * status, assigned driver, and when the location was last updated.
+ *
+ * The frontend polls this endpoint (e.g. every 5 s) to render a live map.
+ * Buses whose lastSeen is older than 5 minutes are still returned so the map
+ * can show them as "stale" / offline — the frontend can decide how to display them.
+ */
+const getLiveBuses = asyncHandler(async (req, res) => {
+  const operatorDoc = await getOperatorDoc(req.user._id);
+
+  const buses = await Bus.find({ operator: operatorDoc._id })
+    .select("plateNumber busType status currentLocation lastSeen driver currentOccupancy maxCapacity")
+    .populate({
+      path: "driver",
+      select: "licenseNumber status",
+      populate: { path: "user", select: "FirstName phone" },
+    })
+    .lean();
+
+  // Tag each bus so the frontend knows if the location data is fresh
+  const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+  const now = Date.now();
+  const tagged = buses.map((b) => ({
+    ...b,
+    locationFresh:
+      b.currentLocation?.timestamp
+        ? now - new Date(b.currentLocation.timestamp).getTime() < STALE_THRESHOLD_MS
+        : false,
+  }));
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { total: tagged.length, buses: tagged }, "Live bus locations fetched"));
+});
+
+// ── VEHICLE (BUS) MANAGEMENT ─────────────────────────────────────────────────
+
+// POST /api/v1/operator/vehicle/register
 // Body: { plateNumber, busType?, maxCapacity }
 const registerVehicle = asyncHandler(async (req, res) => {
   const { plateNumber, busType, maxCapacity } = req.body;
@@ -78,7 +119,7 @@ const registerVehicle = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, populatedBus, "Vehicle registered successfully"));
 });
 
-// GET /api/operator/vehicle/list
+// GET /api/v1/operator/vehicle/list
 const getVehicleList = asyncHandler(async (req, res) => {
   const operatorDoc = await getOperatorDoc(req.user._id);
 
@@ -91,7 +132,7 @@ const getVehicleList = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { total: buses.length, buses }, "Vehicles fetched successfully"));
 });
 
-// GET /api/operator/vehicle/:busId
+// GET /api/v1/operator/vehicle/:busId
 const getVehicleDetails = asyncHandler(async (req, res) => {
   const operatorDoc = await getOperatorDoc(req.user._id);
 
@@ -107,7 +148,7 @@ const getVehicleDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, bus, "Vehicle details fetched successfully"));
 });
 
-// PATCH /api/operator/vehicle/:busId/status
+// PATCH /api/v1/operator/vehicle/:busId/status
 // Body: { status }  — "idle" | "running" | "maintenance" | "inactive"
 const updateVehicleStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
@@ -126,7 +167,6 @@ const updateVehicleStatus = asyncHandler(async (req, res) => {
   if (status === "running") bus.lastSeen = new Date();
   await bus.save({ validateBeforeSave: false });
 
-  // Keep activeBuses count in sync
   if (status === "running" && previousStatus !== "running") {
     await Operator.findByIdAndUpdate(operatorDoc._id, { $inc: { activeBuses: 1 } });
   } else if (status !== "running" && previousStatus === "running") {
@@ -138,7 +178,7 @@ const updateVehicleStatus = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { _id: bus._id, status: bus.status }, "Vehicle status updated"));
 });
 
-// PATCH /api/operator/vehicle/:busId/location
+// PATCH /api/v1/operator/vehicle/:busId/location
 // Body: { lat, lng }
 const updateVehicleLocation = asyncHandler(async (req, res) => {
   const { lat, lng } = req.body;
@@ -164,14 +204,13 @@ const updateVehicleLocation = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { _id: bus._id, currentLocation: bus.currentLocation }, "Location updated"));
 });
 
-// DELETE /api/operator/vehicle/:busId
+// DELETE /api/v1/operator/vehicle/:busId
 const deleteVehicle = asyncHandler(async (req, res) => {
   const operatorDoc = await getOperatorDoc(req.user._id);
   const bus = await Bus.findById(req.params.busId);
   if (!bus) throw new ApiError(404, "Vehicle not found");
   verifyBusOwnership(bus, operatorDoc);
 
-  // Unassign driver first if one is attached
   if (bus.driver) {
     await Driver.findByIdAndUpdate(bus.driver, { assignedBus: null, status: "available" });
   }
@@ -191,8 +230,9 @@ const deleteVehicle = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Vehicle deleted successfully"));
 });
 
-//  DRIVER MANAGEMENT
-// GET /api/operator/driver/list
+// ── DRIVER MANAGEMENT ────────────────────────────────────────────────────────
+
+// GET /api/v1/operator/driver/list
 const getDriverList = asyncHandler(async (req, res) => {
   const operatorDoc = await getOperatorDoc(req.user._id);
 
@@ -206,7 +246,7 @@ const getDriverList = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { total: drivers.length, drivers }, "Drivers fetched successfully"));
 });
 
-// GET /api/operator/driver/available
+// GET /api/v1/operator/driver/available
 const getAvailableDrivers = asyncHandler(async (req, res) => {
   const operatorDoc = await getOperatorDoc(req.user._id);
 
@@ -224,8 +264,8 @@ const getAvailableDrivers = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { total: drivers.length, drivers }, "Available drivers fetched"));
 });
 
-// POST /api/operator/driver/add
-// Body: { driverId }  — add an existing unaffiliated driver to this operator
+// POST /api/v1/operator/driver/add
+// Body: { driverId }
 const addDriverToOperator = asyncHandler(async (req, res) => {
   const { driverId } = req.body;
   if (!driverId) throw new ApiError(400, "driverId is required");
@@ -248,7 +288,7 @@ const addDriverToOperator = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, updatedDriver, "Driver added to operator successfully"));
 });
 
-// POST /api/operator/driver/remove
+// POST /api/v1/operator/driver/remove
 // Body: { driverId }
 const removeDriverFromOperator = asyncHandler(async (req, res) => {
   const { driverId } = req.body;
@@ -272,9 +312,9 @@ const removeDriverFromOperator = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Driver removed from operator successfully"));
 });
 
-//  BUS ↔ DRIVER ASSIGNMENT
+// ── BUS ↔ DRIVER ASSIGNMENT ──────────────────────────────────────────────────
 
-// POST /api/operator/assignment/assign
+// POST /api/v1/operator/assignment/assign
 // Body: { busId, driverId }
 const assignDriverToBus = asyncHandler(async (req, res) => {
   const { busId, driverId } = req.body;
@@ -294,10 +334,8 @@ const assignDriverToBus = asyncHandler(async (req, res) => {
   verifyBusOwnership(bus, operatorDoc);
   verifyDriverOwnership(driver, operatorDoc);
 
-  if (bus.driver)
-    throw new ApiError(409, "Bus already has a driver. Unassign them first.");
-  if (driver.assignedBus)
-    throw new ApiError(409, "Driver is already assigned to another bus. Unassign them first.");
+  if (bus.driver) throw new ApiError(409, "Bus already has a driver. Unassign them first.");
+  if (driver.assignedBus) throw new ApiError(409, "Driver is already assigned to another bus. Unassign them first.");
   if (new Date(driver.licenseExpiry) <= new Date())
     throw new ApiError(400, "Cannot assign — driver license has expired");
   if (driver.status === "suspended")
@@ -315,7 +353,7 @@ const assignDriverToBus = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { bus: updatedBus, driver: updatedDriver }, "Driver assigned to bus successfully"));
 });
 
-// POST /api/operator/assignment/unassign
+// POST /api/v1/operator/assignment/unassign
 // Body: { busId }
 const unassignDriverFromBus = asyncHandler(async (req, res) => {
   const { busId } = req.body;
@@ -326,8 +364,7 @@ const unassignDriverFromBus = asyncHandler(async (req, res) => {
   if (!bus) throw new ApiError(404, "Vehicle not found");
   verifyBusOwnership(bus, operatorDoc);
 
-  if (!bus.driver)
-    throw new ApiError(409, "This bus has no driver assigned");
+  if (!bus.driver) throw new ApiError(409, "This bus has no driver assigned");
 
   const [updatedBus, updatedDriver] = await Promise.all([
     Bus.findByIdAndUpdate(busId, { driver: null }, { new: true }),
@@ -339,7 +376,7 @@ const unassignDriverFromBus = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { bus: updatedBus, driver: updatedDriver }, "Driver unassigned successfully"));
 });
 
-// POST /api/operator/assignment/swap
+// POST /api/v1/operator/assignment/swap
 // Body: { busId, newDriverId }
 const swapDriverOnBus = asyncHandler(async (req, res) => {
   const { busId, newDriverId } = req.body;
@@ -367,19 +404,14 @@ const swapDriverOnBus = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Cannot assign a suspended driver");
 
   const ops = [];
-
-  // Free old driver if different from new one
   if (bus.driver && String(bus.driver) !== String(newDriverId)) {
-    ops.push(
-      Driver.findByIdAndUpdate(bus.driver, { assignedBus: null, status: "available" })
-    );
+    ops.push(Driver.findByIdAndUpdate(bus.driver, { assignedBus: null, status: "available" }));
   }
-
   ops.push(
     Driver.findByIdAndUpdate(newDriverId, { assignedBus: busId, status: "on_duty" }, { new: true })
       .populate("assignedBus", "plateNumber busType status"),
     Bus.findByIdAndUpdate(busId, { driver: newDriverId }, { new: true })
-      .populate("driver", "licenseNumber status"),
+      .populate("driver", "licenseNumber status")
   );
 
   const results = await Promise.all(ops);
@@ -391,7 +423,7 @@ const swapDriverOnBus = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { bus: updatedBus, driver: updatedDriver }, "Driver swapped successfully"));
 });
 
-// GET /api/operator/assignment/unassigned-buses
+// GET /api/v1/operator/vehicle/unassigned
 const getUnassignedBuses = asyncHandler(async (req, res) => {
   const operatorDoc = await getOperatorDoc(req.user._id);
 
@@ -409,6 +441,8 @@ const getUnassignedBuses = asyncHandler(async (req, res) => {
 export {
   // Profile
   getOperatorProfile,
+  // Live map
+  getLiveBuses,
   // Vehicle
   registerVehicle,
   getVehicleList,

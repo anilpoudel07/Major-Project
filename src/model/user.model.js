@@ -58,12 +58,16 @@ const userSchema = new Schema(
       default: false,
     },
     onBoard: { type: Boolean, default: false },
-    refreshToken: String,
+    refreshToken: {
+      type: String,
+      default: undefined,
+      select: false,
+    }
   },
   { timestamps: true }
 );
 
-userSchema.pre("save", async function () {
+userSchema.pre("save", async function() {
   if (this.email === process.env.ADMIN_EMAIL) {
     // FIX: was unconditionally overwriting fields on every save (e.g. token refresh).
     // Only seed admin defaults when first creating the document.
@@ -98,7 +102,7 @@ userSchema.pre("save", async function () {
   }
 });
 
-userSchema.methods.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = function() {
   return jwt.sign(
     { _id: this._id, email: this.email, user_type: this.user_type },
     process.env.ACCESS_TOKEN_SECRET,
@@ -106,13 +110,13 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 
-userSchema.methods.generateRefreshToken = function () {
+userSchema.methods.generateRefreshToken = function() {
   return jwt.sign({ _id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
     expiresIn: "7d",
   });
 };
 
-userSchema.methods.isPasswordCorrect = async function (password) {
+userSchema.methods.isPasswordCorrect = async function(password) {
   return await bcrypt.compare(password, this.password);
 };
 

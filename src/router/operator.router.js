@@ -124,4 +124,4 @@ router.route("/analytics/drivers/:driverId").get(getDriverDetailAnalytics);
 
 
 
-export default router;
+export default router

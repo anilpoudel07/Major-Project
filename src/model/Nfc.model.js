@@ -15,10 +15,14 @@ const nfcCardSchema = new mongoose.Schema({
     required: true,
   },
 
+  // FIX: default was 0 but min was 100 — Mongoose would reject any save on a
+  // freshly-created card. Default is now 0 (card starts empty). The business
+  // rule of "minimum 100 to be usable" is enforced in tap.service.js by
+  // checking nfcCard.balance >= fare before deducting, NOT in the schema.
   balance: {
     type: Number,
     default: 0,
-    min: 100,
+    min: 0,
   },
 
   cardType: {
@@ -44,11 +48,16 @@ const nfcCardSchema = new mongoose.Schema({
 
   verifiedAt: Date,
 
+  lastUsedAt: Date,
+
   requestedAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-export const NfcCard = mongoose.model("NfcCard", nfcCardSchema);
+// Index for fast tap lookups (the hot path hit on every NFC scan)
+nfcCardSchema.index({ cardUid: 1 });
+nfcCardSchema.index({ user: 1 });
 
+export const NfcCard = mongoose.model("NfcCard", nfcCardSchema);
